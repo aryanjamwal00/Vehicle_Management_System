@@ -1,0 +1,20 @@
+packages:
+  "recharts": "For beautiful dashboard analytics and data visualization"
+  "framer-motion": "For premium page transitions and interactive micro-animations"
+  "react-hook-form": "For robust, performant form handling and validation"
+  "@hookform/resolvers": "For seamless Zod validation integration with forms"
+  "date-fns": "For formatting and displaying readable dates"
+  "clsx": "For conditional class name joining"
+  "tailwind-merge": "For merging tailwind classes safely"
+  
+images:
+  - path: "artifacts/vehicle-management/public/images/dashboard-bg.png"
+    description: "A premium, subtle abstract geometric background with faint glowing indigo and cyan lines, representing modern technology and automotive speed. Dark theme."
+    aspect_ratio: "16:9"
+  - path: "artifacts/vehicle-management/public/images/pattern.png"
+    description: "A very light, subtle, almost invisible grid and dot pattern to be used as a background texture for a modern clean web dashboard."
+    aspect_ratio: "16:9"
+
+notes:
+  - Using generated Orval React Query hooks directly from @workspace/api-client-react as per workspace architecture.
+  - Assuming standard Shadcn-like UI components exist in src/components/ui/ but building custom robust fallback forms to ensure perfect execution.
