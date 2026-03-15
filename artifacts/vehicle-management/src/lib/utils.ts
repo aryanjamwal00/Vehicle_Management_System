@@ -1,28 +1,25 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { format, parseISO } from "date-fns";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatDate(dateString: string) {
+export function formatDate(dateString: string | undefined | null) {
+  if (!dateString) return "N/A";
   try {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    }).format(date);
+    return format(parseISO(dateString), "MMM d, yyyy");
   } catch (e) {
     return dateString;
   }
 }
 
-export function generateInitials(name: string) {
-  return name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .substring(0, 2);
+export function formatDateTime(dateString: string | undefined | null) {
+  if (!dateString) return "N/A";
+  try {
+    return format(parseISO(dateString), "MMM d, yyyy h:mm a");
+  } catch (e) {
+    return dateString;
+  }
 }

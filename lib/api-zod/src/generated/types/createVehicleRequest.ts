@@ -14,6 +14,7 @@ export interface CreateVehicleRequest {
   color: string;
   fuelType: string;
   status: string;
+  mileageKm?: number;
   vehicleTypeId: number;
   customerId: number;
 }

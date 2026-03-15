@@ -8,7 +8,6 @@
 import * as zod from "zod";
 
 /**
- * Returns server health status
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
@@ -153,6 +152,7 @@ export const ListVehiclesResponseItem = zod.object({
   color: zod.string(),
   fuelType: zod.string(),
   status: zod.string(),
+  mileageKm: zod.number(),
   vehicleTypeId: zod.number(),
   vehicleTypeName: zod.string(),
   customerId: zod.number(),
@@ -172,6 +172,7 @@ export const CreateVehicleBody = zod.object({
   color: zod.string(),
   fuelType: zod.string(),
   status: zod.string(),
+  mileageKm: zod.number().optional(),
   vehicleTypeId: zod.number(),
   customerId: zod.number(),
 });
@@ -192,6 +193,7 @@ export const GetVehicleResponse = zod.object({
   color: zod.string(),
   fuelType: zod.string(),
   status: zod.string(),
+  mileageKm: zod.number(),
   vehicleTypeId: zod.number(),
   vehicleTypeName: zod.string(),
   customerId: zod.number(),
@@ -214,6 +216,7 @@ export const UpdateVehicleBody = zod.object({
   color: zod.string(),
   fuelType: zod.string(),
   status: zod.string(),
+  mileageKm: zod.number().optional(),
   vehicleTypeId: zod.number(),
   customerId: zod.number(),
 });
@@ -227,6 +230,7 @@ export const UpdateVehicleResponse = zod.object({
   color: zod.string(),
   fuelType: zod.string(),
   status: zod.string(),
+  mileageKm: zod.number(),
   vehicleTypeId: zod.number(),
   vehicleTypeName: zod.string(),
   customerId: zod.number(),
@@ -239,4 +243,139 @@ export const UpdateVehicleResponse = zod.object({
  */
 export const DeleteVehicleParams = zod.object({
   id: zod.coerce.number(),
+});
+
+/**
+ * @summary Update vehicle mileage
+ */
+export const UpdateVehicleMileageParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateVehicleMileageBody = zod.object({
+  mileageKm: zod.number(),
+});
+
+export const UpdateVehicleMileageResponse = zod.object({
+  id: zod.number(),
+  registrationNumber: zod.string(),
+  make: zod.string(),
+  model: zod.string(),
+  year: zod.number(),
+  color: zod.string(),
+  fuelType: zod.string(),
+  status: zod.string(),
+  mileageKm: zod.number(),
+  vehicleTypeId: zod.number(),
+  vehicleTypeName: zod.string(),
+  customerId: zod.number(),
+  customerName: zod.string(),
+  createdAt: zod.date(),
+});
+
+/**
+ * @summary Check if a vehicle is available for a date range
+ */
+export const CheckVehicleAvailabilityParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const CheckVehicleAvailabilityQueryParams = zod.object({
+  startDate: zod.coerce.string(),
+  endDate: zod.coerce.string(),
+});
+
+export const CheckVehicleAvailabilityResponse = zod.object({
+  available: zod.boolean(),
+  conflictingBookings: zod.array(
+    zod.object({
+      id: zod.number(),
+      startDate: zod.string(),
+      endDate: zod.string(),
+      status: zod.string(),
+    }),
+  ),
+});
+
+/**
+ * @summary List all bookings
+ */
+export const ListBookingsResponseItem = zod.object({
+  id: zod.number(),
+  vehicleId: zod.number(),
+  vehicleName: zod.string(),
+  registrationNumber: zod.string(),
+  customerId: zod.number(),
+  customerName: zod.string(),
+  startDate: zod.string(),
+  endDate: zod.string(),
+  purpose: zod.string(),
+  notes: zod.string().optional(),
+  status: zod.string(),
+  totalDays: zod.number(),
+  createdAt: zod.date(),
+});
+export const ListBookingsResponse = zod.array(ListBookingsResponseItem);
+
+/**
+ * @summary Book a vehicle
+ */
+export const CreateBookingBody = zod.object({
+  vehicleId: zod.number(),
+  customerId: zod.number(),
+  startDate: zod.string(),
+  endDate: zod.string(),
+  purpose: zod.string(),
+  notes: zod.string().optional(),
+});
+
+/**
+ * @summary Get booking by ID
+ */
+export const GetBookingParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetBookingResponse = zod.object({
+  id: zod.number(),
+  vehicleId: zod.number(),
+  vehicleName: zod.string(),
+  registrationNumber: zod.string(),
+  customerId: zod.number(),
+  customerName: zod.string(),
+  startDate: zod.string(),
+  endDate: zod.string(),
+  purpose: zod.string(),
+  notes: zod.string().optional(),
+  status: zod.string(),
+  totalDays: zod.number(),
+  createdAt: zod.date(),
+});
+
+/**
+ * @summary Update booking status (confirm, complete, or cancel)
+ */
+export const UpdateBookingStatusParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateBookingStatusBody = zod.object({
+  status: zod.string(),
+  mileageOnReturn: zod.number().optional(),
+});
+
+export const UpdateBookingStatusResponse = zod.object({
+  id: zod.number(),
+  vehicleId: zod.number(),
+  vehicleName: zod.string(),
+  registrationNumber: zod.string(),
+  customerId: zod.number(),
+  customerName: zod.string(),
+  startDate: zod.string(),
+  endDate: zod.string(),
+  purpose: zod.string(),
+  notes: zod.string().optional(),
+  status: zod.string(),
+  totalDays: zod.number(),
+  createdAt: zod.date(),
 });

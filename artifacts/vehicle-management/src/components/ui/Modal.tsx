@@ -1,60 +1,43 @@
-import { ReactNode, useEffect } from "react";
-import { X } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import * as React from "react"
+import { cn } from "@/lib/utils"
+import { X } from "lucide-react"
 
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
-  children: ReactNode;
+  description?: string;
+  children: React.ReactNode;
+  className?: string;
 }
 
-export function Modal({ isOpen, onClose, title, children }: ModalProps) {
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
-    return () => {
-      document.body.style.overflow = "unset";
-    };
-  }, [isOpen]);
+export function Modal({ isOpen, onClose, title, description, children, className }: ModalProps) {
+  if (!isOpen) return null;
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6"
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-card w-full max-w-lg rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col max-h-[90vh]"
-            >
-              <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted/30">
-                <h2 className="text-xl font-display font-bold text-foreground">{title}</h2>
-                <button
-                  onClick={onClose}
-                  className="p-2 text-muted-foreground hover:bg-muted hover:text-foreground rounded-full transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="p-6 overflow-y-auto">
-                {children}
-              </div>
-            </motion.div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
-  );
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div 
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
+        onClick={onClose}
+      />
+      <div className={cn(
+        "relative z-50 w-full max-w-lg rounded-2xl bg-background p-6 shadow-2xl animate-in zoom-in-95 fade-in-0 duration-200",
+        className
+      )}>
+        <button
+          onClick={onClose}
+          className="absolute right-4 top-4 rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+        >
+          <X size={20} />
+        </button>
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold tracking-tight text-foreground">{title}</h2>
+          {description && <p className="mt-1.5 text-sm text-muted-foreground">{description}</p>}
+        </div>
+        <div>
+          {children}
+        </div>
+      </div>
+    </div>
+  )
 }

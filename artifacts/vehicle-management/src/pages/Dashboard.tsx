@@ -1,215 +1,125 @@
-import { useListCustomers, useListVehicles, useListVehicleTypes } from "@workspace/api-client-react";
-import { Car, Users, Settings2, Activity } from "lucide-react";
-import { Link } from "wouter";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell
-} from 'recharts';
-
-const COLORS = ['#4f46e5', '#8b5cf6', '#ec4899', '#0ea5e9'];
+import React from "react";
+import { useListCustomers, useListVehicles, useListVehicleTypes, useListBookings } from "@workspace/api-client-react";
+import { Card, CardContent } from "@/components/ui/Card";
+import { Users, CarFront, Tags, CalendarDays, TrendingUp, AlertCircle } from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function Dashboard() {
-  const { data: customers, isLoading: isCustomersLoading } = useListCustomers();
-  const { data: vehicles, isLoading: isVehiclesLoading } = useListVehicles();
-  const { data: vehicleTypes, isLoading: isTypesLoading } = useListVehicleTypes();
+  const { data: customers = [], isLoading: loadingCustomers } = useListCustomers();
+  const { data: vehicles = [], isLoading: loadingVehicles } = useListVehicles();
+  const { data: vehicleTypes = [], isLoading: loadingTypes } = useListVehicleTypes();
+  const { data: bookings = [], isLoading: loadingBookings } = useListBookings();
 
-  const isLoading = isCustomersLoading || isVehiclesLoading || isTypesLoading;
+  const activeBookings = bookings.filter(b => b.status === "Active" || b.status === "Pending");
+  const maintenanceVehicles = vehicles.filter(v => v.status === "Under Maintenance");
+  
+  const stats = [
+    { title: "Total Customers", value: customers.length, icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
+    { title: "Fleet Size", value: vehicles.length, icon: CarFront, color: "text-primary", bg: "bg-primary/10" },
+    { title: "Active Bookings", value: activeBookings.length, icon: CalendarDays, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+    { title: "Vehicle Types", value: vehicleTypes.length, icon: Tags, color: "text-purple-500", bg: "bg-purple-500/10" },
+  ];
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"></div>
-      </div>
-    );
+  if (loadingCustomers || loadingVehicles || loadingTypes || loadingBookings) {
+    return <div className="flex items-center justify-center h-[60vh]"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>;
   }
 
-  // Analytics logic
-  const statusData = vehicles?.reduce((acc, v) => {
-    acc[v.status] = (acc[v.status] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
-  const pieData = statusData ? Object.entries(statusData).map(([name, value]) => ({ name, value })) : [];
-
-  const typeData = vehicles?.reduce((acc, v) => {
-    acc[v.vehicleTypeName] = (acc[v.vehicleTypeName] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
-  const barData = typeData ? Object.entries(typeData).map(([name, count]) => ({ name, count })) : [];
-
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-3xl sm:text-4xl font-display font-bold text-foreground">Overview</h1>
-        <p className="text-muted-foreground mt-2 text-lg">Welcome back. Here's what's happening with your fleet today.</p>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
+        <p className="text-muted-foreground mt-1 text-lg">Welcome back! Here's what's happening with your fleet today.</p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
-          title="Total Vehicles" 
-          value={vehicles?.length || 0} 
-          icon={<Car className="w-6 h-6 text-blue-500" />} 
-          trend="+12%" 
-          bg="bg-blue-500/10" 
-        />
-        <StatCard 
-          title="Active Customers" 
-          value={customers?.length || 0} 
-          icon={<Users className="w-6 h-6 text-indigo-500" />} 
-          trend="+5%" 
-          bg="bg-indigo-500/10" 
-        />
-        <StatCard 
-          title="Vehicle Categories" 
-          value={vehicleTypes?.length || 0} 
-          icon={<Settings2 className="w-6 h-6 text-violet-500" />} 
-          trend="Stable" 
-          bg="bg-violet-500/10" 
-        />
-        <StatCard 
-          title="System Health" 
-          value="100%" 
-          icon={<Activity className="w-6 h-6 text-emerald-500" />} 
-          trend="Optimal" 
-          bg="bg-emerald-500/10" 
-        />
-      </div>
-
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-card rounded-2xl border border-border shadow-sm p-6">
-          <h3 className="text-lg font-bold font-display mb-6">Vehicles by Type</h3>
-          <div className="h-72 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={barData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#6b7280', fontSize: 12}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#6b7280', fontSize: 12}} />
-                <Tooltip 
-                  cursor={{fill: '#f3f4f6'}}
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                />
-                <Bar dataKey="count" fill="var(--primary)" radius={[6, 6, 0, 0]} maxBarSize={50} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="bg-card rounded-2xl border border-border shadow-sm p-6">
-          <h3 className="text-lg font-bold font-display mb-6">Fleet Status</h3>
-          <div className="h-72 w-full flex items-center justify-center">
-             <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={80}
-                  outerRadius={110}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            {/* Custom Legend */}
-            <div className="absolute flex flex-col gap-3 ml-48">
-              {pieData.map((entry, index) => (
-                <div key={entry.name} className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
-                  <span className="text-sm font-medium text-muted-foreground">{entry.name}</span>
-                  <span className="text-sm font-bold text-foreground ml-auto pl-4">{entry.value}</span>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {stats.map((stat, i) => (
+          <motion.div
+            key={stat.title}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
+          >
+            <Card className="card-hover">
+              <CardContent className="p-6 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{stat.title}</p>
+                  <p className="text-4xl font-bold mt-2 text-foreground">{stat.value}</p>
                 </div>
-              ))}
-            </div>
+                <div className={`p-4 rounded-2xl ${stat.bg}`}>
+                  <stat.icon className={`h-8 w-8 ${stat.color}`} />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <Card className="glass-panel">
+          <div className="p-6 border-b border-border/50">
+            <h3 className="text-lg font-bold flex items-center gap-2">
+              <CalendarDays className="h-5 w-5 text-primary" />
+              Recent Bookings
+            </h3>
           </div>
-        </div>
-      </div>
+          <div className="p-0">
+            {bookings.slice(0, 5).map((booking, i) => (
+              <div key={booking.id} className="flex items-center justify-between p-4 border-b border-border/50 last:border-0 hover:bg-muted/50 transition-colors">
+                <div>
+                  <p className="font-semibold text-foreground">{booking.customerName}</p>
+                  <p className="text-sm text-muted-foreground">{booking.vehicleName} ({booking.registrationNumber})</p>
+                </div>
+                <div className="text-right">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                    booking.status === 'Completed' ? 'bg-emerald-100 text-emerald-800' :
+                    booking.status === 'Active' ? 'bg-blue-100 text-blue-800' :
+                    booking.status === 'Pending' ? 'bg-amber-100 text-amber-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                    {booking.status}
+                  </span>
+                  <p className="text-xs text-muted-foreground mt-1">{booking.startDate} to {booking.endDate}</p>
+                </div>
+              </div>
+            ))}
+            {bookings.length === 0 && (
+              <div className="p-8 text-center text-muted-foreground">No bookings found.</div>
+            )}
+          </div>
+        </Card>
 
-      {/* Recent Vehicles Table */}
-      <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-        <div className="px-6 py-5 border-b border-border flex items-center justify-between">
-          <h3 className="text-lg font-bold font-display">Recently Added Vehicles</h3>
-          <Link href="/vehicles">
-            <span className="text-sm font-medium text-primary hover:underline cursor-pointer">View All</span>
-          </Link>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-muted/50 text-muted-foreground uppercase">
-              <tr>
-                <th className="px-6 py-4 font-medium">Registration</th>
-                <th className="px-6 py-4 font-medium">Vehicle</th>
-                <th className="px-6 py-4 font-medium">Customer</th>
-                <th className="px-6 py-4 font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y border-border">
-              {vehicles?.slice(0, 5).map((vehicle) => (
-                <tr key={vehicle.id} className="hover:bg-muted/30 transition-colors">
-                  <td className="px-6 py-4 font-medium text-foreground">{vehicle.registrationNumber}</td>
-                  <td className="px-6 py-4">
-                    <div className="font-medium text-foreground">{vehicle.make} {vehicle.model}</div>
-                    <div className="text-xs text-muted-foreground">{vehicle.year} • {vehicle.color}</div>
-                  </td>
-                  <td className="px-6 py-4 text-muted-foreground">{vehicle.customerName}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                      vehicle.status === 'Active' ? 'bg-emerald-100 text-emerald-700' :
-                      vehicle.status === 'Inactive' ? 'bg-slate-100 text-slate-700' :
-                      'bg-amber-100 text-amber-700'
-                    }`}>
-                      {vehicle.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-              {(!vehicles || vehicles.length === 0) && (
-                <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground">
-                    No vehicles registered yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function StatCard({ title, value, icon, trend, bg }: { title: string, value: string | number, icon: React.ReactNode, trend: string, bg: string }) {
-  return (
-    <div className="bg-card p-6 rounded-2xl border border-border shadow-sm flex flex-col justify-between group hover:shadow-md transition-all duration-300">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <h3 className="text-3xl font-bold font-display text-foreground mt-2">{value}</h3>
-        </div>
-        <div className={`p-3 rounded-xl ${bg} group-hover:scale-110 transition-transform duration-300`}>
-          {icon}
-        </div>
-      </div>
-      <div className="mt-4 flex items-center text-sm">
-        <span className="text-emerald-500 font-semibold">{trend}</span>
-        <span className="text-muted-foreground ml-2">vs last month</span>
+        <Card className="glass-panel">
+          <div className="p-6 border-b border-border/50">
+            <h3 className="text-lg font-bold flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-amber-500" />
+              Vehicles Needing Attention
+            </h3>
+          </div>
+          <div className="p-0">
+            {maintenanceVehicles.length > 0 ? maintenanceVehicles.map((vehicle) => (
+              <div key={vehicle.id} className="flex items-center justify-between p-4 border-b border-border/50 last:border-0 hover:bg-muted/50 transition-colors">
+                <div>
+                  <p className="font-semibold text-foreground">{vehicle.make} {vehicle.model}</p>
+                  <p className="text-sm text-muted-foreground">{vehicle.registrationNumber}</p>
+                </div>
+                <div className="text-right">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">
+                    Maintenance
+                  </span>
+                  <p className="text-xs text-muted-foreground mt-1">{vehicle.mileageKm.toLocaleString()} km</p>
+                </div>
+              </div>
+            )) : (
+              <div className="p-8 flex flex-col items-center justify-center text-center">
+                <div className="bg-emerald-100 p-3 rounded-full mb-3">
+                  <TrendingUp className="h-6 w-6 text-emerald-600" />
+                </div>
+                <p className="font-medium text-foreground">All good!</p>
+                <p className="text-sm text-muted-foreground mt-1">No vehicles currently require maintenance.</p>
+              </div>
+            )}
+          </div>
+        </Card>
       </div>
     </div>
   );

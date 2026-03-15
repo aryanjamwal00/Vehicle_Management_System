@@ -13,6 +13,7 @@ export const vehiclesTable = pgTable("vehicles", {
   color: text("color").notNull(),
   fuelType: text("fuel_type").notNull(),
   status: text("status").notNull().default("Active"),
+  mileageKm: integer("mileage_km").notNull().default(0),
   vehicleTypeId: integer("vehicle_type_id").notNull().references(() => vehicleTypesTable.id),
   customerId: integer("customer_id").notNull().references(() => customersTable.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),

@@ -1,281 +1,281 @@
-import { useState } from "react";
-import { useListVehicles, useListCustomers, useListVehicleTypes, useCreateVehicle, useUpdateVehicle, useDeleteVehicle } from "@workspace/api-client-react";
+import React, { useState } from "react";
+import { Link } from "wouter";
+import { useListVehicles, useListCustomers, useListVehicleTypes, useCreateVehicle, useUpdateVehicle, useDeleteVehicle, useListBookings } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
 import { Modal } from "@/components/ui/Modal";
-import { Plus, Edit2, Trash2, Search, Info } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { z } from "zod";
+import { Card } from "@/components/ui/Card";
+import { Plus, Edit2, Trash2, Search, Car, Gauge, Fuel } from "lucide-react";
 import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQueryClient } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Badge } from "@/components/ui/Badge";
 
 const vehicleSchema = z.object({
-  registrationNumber: z.string().min(3, "Required"),
-  make: z.string().min(2, "Required"),
-  model: z.string().min(2, "Required"),
-  year: z.coerce.number().min(1900).max(new Date().getFullYear() + 1),
-  color: z.string().min(2, "Required"),
-  fuelType: z.string().min(2, "Required"),
-  status: z.string().min(2, "Required"),
+  registrationNumber: z.string().min(2, "Required"),
+  make: z.string().min(1, "Required"),
+  model: z.string().min(1, "Required"),
+  year: z.coerce.number().min(1900).max(2100),
+  color: z.string().min(1, "Required"),
+  fuelType: z.string().min(1, "Required"),
+  status: z.string().min(1, "Required"),
+  mileageKm: z.coerce.number().min(0).default(0),
   vehicleTypeId: z.coerce.number().min(1, "Required"),
   customerId: z.coerce.number().min(1, "Required"),
 });
 
-type VehicleFormValues = z.infer<typeof vehicleSchema>;
+type VehicleFormData = z.infer<typeof vehicleSchema>;
 
 export default function Vehicles() {
-  const { data: vehicles, isLoading: loadingVehicles } = useListVehicles();
-  const { data: customers } = useListCustomers();
-  const { data: types } = useListVehicleTypes();
+  const queryClient = useQueryClient();
+  const { data: vehicles = [], isLoading } = useListVehicles();
+  const { data: customers = [] } = useListCustomers();
+  const { data: types = [] } = useListVehicleTypes();
+  const { data: bookings = [] } = useListBookings();
   
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState("All");
-  
+  const createVehicle = useCreateVehicle();
+  const updateVehicle = useUpdateVehicle();
+  const deleteVehicle = useDeleteVehicle();
+
+  const [search, setSearch] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
 
-  const createMutation = useCreateVehicle();
-  const updateMutation = useUpdateVehicle();
-  const deleteMutation = useDeleteVehicle();
-
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<VehicleFormValues>({
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<VehicleFormData>({
     resolver: zodResolver(vehicleSchema)
   });
 
-  const filteredVehicles = vehicles?.filter(v => {
-    const matchesSearch = `${v.registrationNumber} ${v.make} ${v.model} ${v.customerName}`.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === "All" || v.status === filterStatus;
-    return matchesSearch && matchesStatus;
-  });
+  const filteredVehicles = vehicles.filter(v => 
+    `${v.make} ${v.model} ${v.registrationNumber}`.toLowerCase().includes(search.toLowerCase())
+  );
 
-  const openAddModal = () => {
+  const openNewModal = () => {
     setEditingId(null);
-    reset({ 
-      registrationNumber: '', make: '', model: '', year: new Date().getFullYear(), 
-      color: '', fuelType: '', status: 'Active', vehicleTypeId: 0, customerId: 0 
-    });
+    reset({ make: "", model: "", registrationNumber: "", year: new Date().getFullYear(), color: "", fuelType: "Petrol", status: "Active", mileageKm: 0 });
     setIsModalOpen(true);
   };
 
-  const openEditModal = (vehicle: any) => {
+  const openEditModal = (e: React.MouseEvent, vehicle: any) => {
+    e.preventDefault();
+    e.stopPropagation();
     setEditingId(vehicle.id);
-    reset({
-      registrationNumber: vehicle.registrationNumber, make: vehicle.make, model: vehicle.model,
-      year: vehicle.year, color: vehicle.color, fuelType: vehicle.fuelType, status: vehicle.status,
-      vehicleTypeId: vehicle.vehicleTypeId, customerId: vehicle.customerId
-    });
+    reset(vehicle);
     setIsModalOpen(true);
   };
 
-  const onSubmit = (data: VehicleFormValues) => {
-    if (editingId) {
-      updateMutation.mutate({ id: editingId, data }, {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: ["/api/vehicles"] });
-          setIsModalOpen(false);
-          toast({ title: "Success", description: "Vehicle updated." });
-        }
-      });
-    } else {
-      createMutation.mutate({ data }, {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: ["/api/vehicles"] });
-          setIsModalOpen(false);
-          toast({ title: "Success", description: "Vehicle registered successfully." });
-        }
-      });
+  const handleDelete = (e: React.MouseEvent, id: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (confirm("Are you sure you want to delete this vehicle?")) {
+      deleteVehicle.mutate(
+        { id },
+        { onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/vehicles"] }) }
+      );
     }
   };
 
-  const handleDelete = (id: number) => {
-    if (confirm("Delete this vehicle permanently?")) {
-      deleteMutation.mutate({ id }, {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: ["/api/vehicles"] });
-          toast({ title: "Success", description: "Vehicle deleted." });
+  const onSubmit = (data: VehicleFormData) => {
+    if (editingId) {
+      updateVehicle.mutate(
+        { id: editingId, data },
+        { 
+          onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["/api/vehicles"] });
+            setIsModalOpen(false);
+          } 
         }
-      });
+      );
+    } else {
+      createVehicle.mutate(
+        { data },
+        { 
+          onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["/api/vehicles"] });
+            setIsModalOpen(false);
+          } 
+        }
+      );
     }
+  };
+
+  const getAvailability = (vehicleId: number) => {
+    const today = new Date().toISOString().split('T')[0];
+    const activeBooking = bookings.find(b => 
+      b.vehicleId === vehicleId && 
+      b.status === "Active" && 
+      b.startDate <= today && 
+      b.endDate >= today
+    );
+    return activeBooking ? { status: "Booked", color: "bg-red-100 text-red-800 border-red-200" } : { status: "Available", color: "bg-emerald-100 text-emerald-800 border-emerald-200" };
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-display font-bold text-foreground">Fleet Vehicles</h1>
-          <p className="text-muted-foreground mt-1">Manage registration, assignments, and statuses.</p>
+          <h1 className="text-3xl font-bold tracking-tight">Vehicles</h1>
+          <p className="text-muted-foreground mt-1">Manage fleet and view details</p>
         </div>
-        <Button onClick={openAddModal} className="shrink-0">
-          <Plus className="w-5 h-5 mr-2" />
-          Register Vehicle
+        <Button onClick={openNewModal} className="gap-2">
+          <Plus size={18} /> Register Vehicle
         </Button>
       </div>
 
-      <div className="bg-card rounded-2xl border border-border shadow-sm flex flex-col">
-        <div className="p-4 border-b border-border bg-muted/20 flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="w-5 h-5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-            <input 
-              type="text" 
-              placeholder="Search by registration, make, model or owner..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border-2 border-border bg-background focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 text-sm"
-            />
-          </div>
-          <select 
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="w-full sm:w-48 px-4 py-2.5 rounded-xl border-2 border-border bg-background focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 text-sm appearance-none cursor-pointer"
-          >
-            <option value="All">All Statuses</option>
-            <option value="Active">Active</option>
-            <option value="Inactive">Inactive</option>
-            <option value="Under Maintenance">Under Maintenance</option>
-          </select>
+      <Card className="p-4 glass-panel">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-5 w-5" />
+          <Input 
+            placeholder="Search make, model, or registration..." 
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-10 max-w-md border-border/50 bg-background/50 backdrop-blur-sm"
+          />
         </div>
+      </Card>
 
-        {loadingVehicles ? (
-          <div className="p-12 flex justify-center"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"></div></div>
-        ) : filteredVehicles?.length === 0 ? (
-           <div className="p-16 text-center">
-            <h3 className="text-lg font-bold text-foreground">No vehicles found</h3>
-            <p className="text-muted-foreground mt-2">No matching vehicles. Try a different search.</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-background text-muted-foreground uppercase text-xs font-semibold tracking-wider">
-                <tr className="border-b border-border">
-                  <th className="px-6 py-5">Registration</th>
-                  <th className="px-6 py-5">Vehicle Details</th>
-                  <th className="px-6 py-5">Owner</th>
-                  <th className="px-6 py-5">Status</th>
-                  <th className="px-6 py-5 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y border-border">
-                {filteredVehicles?.map((vehicle) => (
-                  <tr key={vehicle.id} className="hover:bg-muted/30 transition-colors group">
-                    <td className="px-6 py-4">
-                      <div className="font-mono font-bold text-base text-foreground bg-muted inline-block px-3 py-1 rounded-md border border-border/50 shadow-sm">
-                        {vehicle.registrationNumber}
+      {isLoading ? (
+        <div className="flex justify-center p-12"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredVehicles.map(vehicle => {
+            const avail = getAvailability(vehicle.id);
+            return (
+              <Link key={vehicle.id} href={`/vehicles/${vehicle.id}`}>
+                <Card className="card-hover glass-panel relative overflow-hidden group cursor-pointer h-full flex flex-col">
+                  <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 z-10">
+                    <button onClick={(e) => openEditModal(e, vehicle)} className="p-2 bg-white text-blue-600 rounded-full shadow hover:bg-blue-50 transition"><Edit2 size={16}/></button>
+                    <button onClick={(e) => handleDelete(e, vehicle.id)} className="p-2 bg-white text-red-600 rounded-full shadow hover:bg-red-50 transition"><Trash2 size={16}/></button>
+                  </div>
+                  <div className="p-6 flex-1 flex flex-col">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="bg-primary/10 p-3 rounded-xl text-primary">
+                        <Car className="h-8 w-8" />
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="font-bold text-foreground text-base">{vehicle.make} {vehicle.model}</div>
-                      <div className="flex items-center text-xs text-muted-foreground mt-1 gap-2">
-                        <span className="font-semibold text-primary/80">{vehicle.vehicleTypeName}</span>
-                        <span>•</span>
-                        <span>{vehicle.year}</span>
-                        <span>•</span>
-                        <span className="flex items-center gap-1">
-                           <div className="w-2.5 h-2.5 rounded-full border border-border shadow-sm" style={{backgroundColor: vehicle.color.toLowerCase()}} />
-                           {vehicle.color}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-foreground">{vehicle.customerName}</div>
-                      <Link href={`/customers`}>
-                        <span className="text-xs text-primary hover:underline cursor-pointer">View profile</span>
-                      </Link>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
-                        vehicle.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                        vehicle.status === 'Inactive' ? 'bg-slate-50 text-slate-700 border-slate-200' :
-                        'bg-amber-50 text-amber-700 border-amber-200'
-                      }`}>
-                        {vehicle.status}
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${avail.color}`}>
+                        {vehicle.status === "Under Maintenance" ? "Maintenance" : avail.status}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Link href={`/vehicles/${vehicle.id}`}>
-                          <button className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors" title="View Details">
-                            <Info className="w-4 h-4" />
-                          </button>
-                        </Link>
-                        <button onClick={() => openEditModal(vehicle)} className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors">
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => handleDelete(vehicle.id)} className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                    </div>
+                    
+                    <h3 className="font-bold text-xl">{vehicle.make} {vehicle.model}</h3>
+                    <div className="text-sm font-mono font-semibold text-muted-foreground mt-1 bg-muted inline-block px-2 py-1 rounded-md border">
+                      {vehicle.registrationNumber}
+                    </div>
+
+                    <div className="mt-auto pt-6 space-y-3">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground flex items-center gap-1.5"><Gauge size={16}/> Mileage</span>
+                        <span className="font-semibold">{vehicle.mileageKm?.toLocaleString() ?? 0} km</span>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground flex items-center gap-1.5"><Fuel size={16}/> Fuel</span>
+                        <span className="font-semibold">{vehicle.fuelType}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm border-t pt-3 mt-3">
+                        <span className="text-muted-foreground">Owner</span>
+                        <span className="font-semibold truncate max-w-[120px]" title={vehicle.customerName}>{vehicle.customerName}</span>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              </Link>
+            )
+          })}
+        </div>
+      )}
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingId ? "Edit Vehicle" : "Register Vehicle"}>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)}
+        title={editingId ? "Edit Vehicle" : "Register Vehicle"}
+      >
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Make</label>
+              <Input {...register("make")} placeholder="e.g. Toyota" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Model</label>
+              <Input {...register("model")} placeholder="e.g. Camry" />
+            </div>
+          </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Select 
-              label="Owner / Customer" 
-              {...register("customerId")} 
-              error={errors.customerId?.message}
-              options={customers?.map(c => ({ label: `${c.firstName} ${c.lastName}`, value: c.id })) || []}
-            />
-            <Select 
-              label="Vehicle Type" 
-              {...register("vehicleTypeId")} 
-              error={errors.vehicleTypeId?.message}
-              options={types?.map(t => ({ label: t.name, value: t.id })) || []}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Reg. Number</label>
+              <Input {...register("registrationNumber")} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Year</label>
+              <Input type="number" {...register("year")} />
+            </div>
           </div>
 
-          <div className="border-t border-border pt-4">
-             <Input label="Registration Number (Plate)" {...register("registrationNumber")} error={errors.registrationNumber?.message} className="font-mono text-lg uppercase" />
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Color</label>
+              <Input {...register("color")} />
+            </div>
+            <div className="space-y-1 col-span-2">
+              <label className="text-sm font-medium">Fuel Type</label>
+              <select 
+                {...register("fuelType")}
+                className="flex h-12 w-full rounded-xl border-2 border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-4 focus:ring-primary/10"
+              >
+                <option value="Petrol">Petrol</option>
+                <option value="Diesel">Diesel</option>
+                <option value="Electric">Electric</option>
+                <option value="Hybrid">Hybrid</option>
+              </select>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Make (Brand)" {...register("make")} error={errors.make?.message} />
-            <Input label="Model" {...register("model")} error={errors.model?.message} />
-            <Input type="number" label="Year" {...register("year")} error={errors.year?.message} />
-            <Input label="Color" {...register("color")} error={errors.color?.message} />
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Customer (Owner)</label>
+              <select 
+                {...register("customerId")}
+                className="flex h-12 w-full rounded-xl border-2 border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-4 focus:ring-primary/10"
+              >
+                <option value="">Select...</option>
+                {customers.map(c => <option key={c.id} value={c.id}>{c.firstName} {c.lastName}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Vehicle Type</label>
+              <select 
+                {...register("vehicleTypeId")}
+                className="flex h-12 w-full rounded-xl border-2 border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-4 focus:ring-primary/10"
+              >
+                <option value="">Select...</option>
+                {types.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <Select 
-              label="Fuel Type" 
-              {...register("fuelType")} 
-              error={errors.fuelType?.message}
-              options={[
-                {label: "Petrol", value: "Petrol"},
-                {label: "Diesel", value: "Diesel"},
-                {label: "Electric", value: "Electric"},
-                {label: "Hybrid", value: "Hybrid"}
-              ]}
-            />
-             <Select 
-              label="Status" 
-              {...register("status")} 
-              error={errors.status?.message}
-              options={[
-                {label: "Active", value: "Active"},
-                {label: "Inactive", value: "Inactive"},
-                {label: "Under Maintenance", value: "Under Maintenance"}
-              ]}
-            />
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Status</label>
+              <select 
+                {...register("status")}
+                className="flex h-12 w-full rounded-xl border-2 border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-4 focus:ring-primary/10"
+              >
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+                <option value="Under Maintenance">Under Maintenance</option>
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Current Mileage (km)</label>
+              <Input type="number" {...register("mileageKm")} />
+            </div>
           </div>
-          
-          <div className="pt-4 flex gap-3 justify-end">
+
+          <div className="flex justify-end gap-3 pt-4">
             <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button type="submit" isLoading={createMutation.isPending || updateMutation.isPending}>
-              {editingId ? "Save Changes" : "Register Vehicle"}
+            <Button type="submit" disabled={createVehicle.isPending || updateVehicle.isPending}>
+              {createVehicle.isPending || updateVehicle.isPending ? "Saving..." : "Save Vehicle"}
             </Button>
           </div>
         </form>

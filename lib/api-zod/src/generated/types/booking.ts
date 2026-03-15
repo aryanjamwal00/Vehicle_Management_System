@@ -6,19 +6,18 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface Vehicle {
+export interface Booking {
   id: number;
+  vehicleId: number;
+  vehicleName: string;
   registrationNumber: string;
-  make: string;
-  model: string;
-  year: number;
-  color: string;
-  fuelType: string;
-  status: string;
-  mileageKm: number;
-  vehicleTypeId: number;
-  vehicleTypeName: string;
   customerId: number;
   customerName: string;
+  startDate: string;
+  endDate: string;
+  purpose: string;
+  notes?: string;
+  status: string;
+  totalDays: number;
   createdAt: Date;
 }

@@ -6,11 +6,18 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./availabilityResponse";
+export * from "./availabilityResponseConflictingBookingsItem";
+export * from "./booking";
+export * from "./checkVehicleAvailabilityParams";
+export * from "./createBookingRequest";
 export * from "./createCustomerRequest";
 export * from "./createVehicleRequest";
 export * from "./createVehicleTypeRequest";
 export * from "./customer";
 export * from "./errorResponse";
 export * from "./healthStatus";
+export * from "./updateBookingStatusRequest";
+export * from "./updateMileageRequest";
 export * from "./vehicle";
 export * from "./vehicleType";

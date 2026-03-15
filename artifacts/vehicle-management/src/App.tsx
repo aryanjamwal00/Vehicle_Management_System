@@ -10,6 +10,7 @@ import Customers from "@/pages/Customers";
 import VehicleTypes from "@/pages/VehicleTypes";
 import Vehicles from "@/pages/Vehicles";
 import VehicleDetails from "@/pages/VehicleDetails";
+import Bookings from "@/pages/Bookings";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -29,6 +30,7 @@ function Router() {
         <Route path="/vehicle-types" component={VehicleTypes} />
         <Route path="/vehicles" component={Vehicles} />
         <Route path="/vehicles/:id" component={VehicleDetails} />
+        <Route path="/bookings" component={Bookings} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>

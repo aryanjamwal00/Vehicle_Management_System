@@ -55,6 +55,7 @@ export interface Vehicle {
   color: string;
   fuelType: string;
   status: string;
+  mileageKm: number;
   vehicleTypeId: number;
   vehicleTypeName: string;
   customerId: number;
@@ -70,6 +71,58 @@ export interface CreateVehicleRequest {
   color: string;
   fuelType: string;
   status: string;
+  mileageKm?: number;
   vehicleTypeId: number;
   customerId: number;
 }
+
+export interface UpdateMileageRequest {
+  mileageKm: number;
+}
+
+export type AvailabilityResponseConflictingBookingsItem = {
+  id: number;
+  startDate: string;
+  endDate: string;
+  status: string;
+};
+
+export interface AvailabilityResponse {
+  available: boolean;
+  conflictingBookings: AvailabilityResponseConflictingBookingsItem[];
+}
+
+export interface Booking {
+  id: number;
+  vehicleId: number;
+  vehicleName: string;
+  registrationNumber: string;
+  customerId: number;
+  customerName: string;
+  startDate: string;
+  endDate: string;
+  purpose: string;
+  notes?: string;
+  status: string;
+  totalDays: number;
+  createdAt: string;
+}
+
+export interface CreateBookingRequest {
+  vehicleId: number;
+  customerId: number;
+  startDate: string;
+  endDate: string;
+  purpose: string;
+  notes?: string;
+}
+
+export interface UpdateBookingStatusRequest {
+  status: string;
+  mileageOnReturn?: number;
+}
+
+export type CheckVehicleAvailabilityParams = {
+  startDate: string;
+  endDate: string;
+};
