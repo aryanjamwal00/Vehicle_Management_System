@@ -93,7 +93,7 @@ router.patch("/:id/status", async (req, res) => {
   }
 
   if (status === "Active") {
-    await db.update(vehiclesTable).set({ status: "Under Maintenance" }).where(eq(vehiclesTable.id, booking.vehicleId));
+    await db.update(vehiclesTable).set({ status: "On Trip" }).where(eq(vehiclesTable.id, booking.vehicleId));
   }
 
   const [full] = await bookingWithRelations().where(eq(bookingsTable.id, id));
