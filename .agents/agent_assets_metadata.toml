@@ -6,3 +6,9 @@ id = "3QO0pyjdfM_3WtuCPWIOD"
 uri = "file://VehicleManagementSystem.pdf"
 type = "pdf"
 title = "Vehicle Management System — Project Documentation"
+
+[[outputs]]
+id = "dgLpNbUgHQLafuKuV2rYM"
+uri = "file://VehicleManagementSystem.tar.gz"
+type = "unspecified"
+title = "Vehicle Management System — Full Project Source Code"
