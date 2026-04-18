@@ -1,5 +1,5 @@
 kind = "api"
-previewPath = "/api" # TODO - should be excluded from preview in the first place
+previewPath = "/api"
 title = "API Server"
 version = "1.0.0"
 id = "3B4_FFSkEVBkAeYMFRJ2e"
@@ -10,13 +10,13 @@ name = "API Server"
 paths = ["/api"]
 
 [services.development]
-run = "pnpm --filter @workspace/api-server run dev"
+run = "mvn -f /home/runner/workspace/artifacts/api-server/java/pom.xml spring-boot:run"
 
 [services.production]
-build = "pnpm --filter @workspace/api-server run build"
+build = "mvn -f /home/runner/workspace/artifacts/api-server/java/pom.xml package -DskipTests -q"
 
 [services.production.run]
-args = ["node", "artifacts/api-server/dist/index.cjs"]
+args = ["java", "-jar", "/home/runner/workspace/artifacts/api-server/java/target/vehicle-management-api-1.0.0.jar"]
 
 [services.production.run.env]
 PORT = "8080"
