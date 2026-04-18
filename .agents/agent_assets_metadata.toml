@@ -12,3 +12,9 @@ id = "dgLpNbUgHQLafuKuV2rYM"
 uri = "file://VehicleManagementSystem.tar.gz"
 type = "unspecified"
 title = "Vehicle Management System — Full Project Source Code"
+
+[[outputs]]
+id = "6zc0OUixBZ1xsdsTIguIT"
+uri = "file://VehicleManagementSystem_OOP_Code.pdf"
+type = "pdf"
+title = "Vehicle Management System — OOP Code & Logic (TypeScript)"
